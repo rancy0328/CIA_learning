@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CIA 科系星球 · 營隊探索</title>
+<style>
+  :root{
+    --lemon:#FFD60A;--lemon-soft:#FFE873;--ink:#fff;--sub:#C7D2FF;--kicker:#FFE873;
+    --line:rgba(255,255,255,.14);--card:rgba(255,255,255,.05);
+    --m-red:#E2553E;--m-blue:#3D7BE0;--m-green:#3FA66A;--m-yellow:#D9A03A;
+    --good:#7CF0B8;--pink:#FF6FA3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
+    background:#070b22;color:var(--ink);overflow:hidden;-webkit-font-smoothing:antialiased}
+  /* 宇宙背景 */
+  #space{position:fixed;inset:0;z-index:0;overflow:hidden;
+    background:radial-gradient(120% 90% at 18% 8%,#241a55 0%,rgba(36,26,85,0) 55%),
+      radial-gradient(120% 90% at 85% 90%,#0e2a55 0%,rgba(14,42,85,0) 55%),
+      linear-gradient(160deg,#0a0e2e 0%,#10103a 45%,#0a1330 100%)}
+  .neb{position:absolute;inset:-10%;background:
+    radial-gradient(40% 40% at 70% 25%,rgba(120,90,255,.16),transparent 70%),
+    radial-gradient(45% 45% at 25% 75%,rgba(40,150,255,.14),transparent 70%);
+    filter:blur(8px);animation:drift 26s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(2%,-2%,0) scale(1.05)}}
+  #stars{position:absolute;inset:0}
+  .star{position:absolute;border-radius:50%;background:#fff;opacity:.7;animation:tw 4s ease-in-out infinite}
+  @keyframes tw{0%,100%{opacity:.25}50%{opacity:.95}}
+  #egg{position:absolute;inset:0;pointer-events:none}.egg{position:absolute;will-change:transform,opacity}
+  /* 舞台 */
+  #stage{position:fixed;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;
+    padding:clamp(20px,4.5vh,54px) clamp(20px,5vw,80px);transition:opacity .22s ease,transform .22s ease}
+  #stage.swap{opacity:0;transform:translateY(10px) scale(.992)}
+  .scene{width:100%;max-width:1120px;display:flex;flex-direction:column;align-items:center;
+    text-align:center;gap:clamp(9px,1.5vh,17px);max-height:100%}
+  .kicker{color:var(--kicker);font-weight:800;letter-spacing:.14em;font-size:clamp(14px,1.7vw,21px)}
+  .art{width:clamp(118px,14vw,186px);height:auto;flex:0 0 auto}
+  .scene.dense{gap:clamp(8px,1.25vh,15px)}
+  .scene.dense .art{width:clamp(94px,10vw,138px)}
+  .art svg{width:100%;height:100%;display:block;filter:drop-shadow(0 8px 26px rgba(0,0,0,.45))}
+  .title{font-weight:900;line-height:1.18;font-size:clamp(26px,3.6vw,50px);text-wrap:balance}
+  .title .hl{color:var(--lemon)}
+  .sub{color:var(--sub);font-weight:600;line-height:1.6;font-size:clamp(17px,2vw,25px);max-width:900px}
+  [data-seq]{opacity:0;transform:translateY(10px);transition:opacity .42s ease,transform .42s ease}
+  [data-seq].on{opacity:1;transform:none}
+  /* 測驗 */
+  .vote{display:inline-flex;align-items:center;gap:.5em;color:var(--lemon-soft);font-weight:800;
+    font-size:clamp(13px,1.5vw,18px);border:1px dashed rgba(255,214,10,.45);border-radius:999px;padding:.35em 1em}
+  .q{font-weight:900;line-height:1.28;font-size:clamp(22px,3vw,40px);max-width:980px}
+  .options{display:flex;flex-direction:column;gap:clamp(8px,1.3vh,14px);width:100%;max-width:900px}
+  .opt{display:flex;align-items:center;gap:clamp(10px,1.4vw,18px);text-align:left;background:var(--card);
+    border:1.5px solid var(--line);border-radius:18px;padding:clamp(11px,1.5vh,16px) clamp(14px,1.7vw,22px);transition:.3s}
+  .react{width:clamp(36px,3.8vw,46px);height:clamp(36px,3.8vw,46px);flex:0 0 auto;border-radius:50%;
+    background:rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center}
+  .react svg{width:64%;height:64%}
+  .otext{font-weight:700;color:#fff;font-size:clamp(16px,1.8vw,22px);line-height:1.4}
+  .check{margin-left:auto;color:var(--good);font-weight:900;font-size:clamp(20px,2.2vw,28px);opacity:0;transition:.3s}
+  .options.revealed .opt{opacity:.42}
+  .options.revealed .opt.correct{opacity:1;border-color:var(--lemon);
+    box-shadow:0 0 0 2px rgba(255,214,10,.4),0 12px 34px rgba(255,214,10,.18);background:rgba(255,214,10,.08)}
+  .options.revealed .opt.correct .check{opacity:1}
+  .explain{color:var(--sub);font-weight:600;line-height:1.6;font-size:clamp(16px,1.8vw,21px);max-width:900px;
+    background:rgba(61,123,224,.12);border:1px solid rgba(61,123,224,.32);border-radius:16px;padding:.8em 1.1em}
+  /* 表情評分 */
+  .semo{display:flex;gap:clamp(10px,1.5vw,18px);flex-wrap:wrap;justify-content:center;width:100%;max-width:780px}
+  .scard{flex:1 1 150px;max-width:182px;background:var(--card);border:1.5px solid var(--line);border-radius:18px;
+    padding:clamp(12px,1.8vh,18px);display:flex;flex-direction:column;align-items:center;gap:.25em}
+  .scard .si{width:clamp(42px,4.6vw,56px);height:clamp(42px,4.6vw,56px);border-radius:50%;
+    background:rgba(255,255,255,.09);display:flex;align-items:center;justify-content:center}
+  .scard .si svg{width:64%;height:64%}
+  .scard b{font-size:clamp(20px,2.3vw,28px);color:#fff}
+  .scard span{color:var(--sub);font-weight:700;font-size:clamp(14px,1.5vw,18px)}
+  .scard.s7{border-color:var(--pink)}.scard.s5{border-color:var(--m-green)}
+  .scard.s3{border-color:var(--m-blue)}.scard.s1{border-color:rgba(159,176,216,.6)}
+  .hint{color:var(--sub);font-weight:700;font-size:clamp(15px,1.6vw,19px);
+    background:rgba(125,240,184,.10);border:1px solid rgba(125,240,184,.32);padding:.5em 1.1em;border-radius:999px}
+  /* 全景卡片 */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,1.4vw,18px);width:100%;max-width:1080px}
+  .grid.four{grid-template-columns:repeat(4,1fr)}
+  .gcard{background:var(--card);border:1px solid rgba(255,214,10,.22);border-radius:18px;
+    padding:clamp(12px,1.7vh,18px);text-align:center;display:flex;flex-direction:column;align-items:center;gap:.5em}
+  .gcard .gi{width:clamp(38px,4vw,52px);height:clamp(38px,4vw,52px)}
+  .gcard h4{color:var(--lemon);font-size:clamp(15px,1.7vw,20px);font-weight:900}
+  .gcard p{color:var(--sub);font-size:clamp(13px,1.4vw,16px);font-weight:600;line-height:1.45}
+  /* 方法步驟 */
+  .steps{display:flex;flex-direction:column;gap:clamp(9px,1.3vh,14px);width:100%;max-width:880px}
+  .step{display:flex;align-items:center;gap:clamp(12px,1.6vw,18px);text-align:left;background:var(--card);
+    border:1px solid var(--line);border-radius:18px;padding:clamp(12px,1.6vh,18px) clamp(14px,1.8vw,22px)}
+  .badge{flex:0 0 auto;width:clamp(44px,4.6vw,58px);height:clamp(44px,4.6vw,58px);border-radius:14px;
+    display:flex;align-items:center;justify-content:center;font-weight:900;color:#0a0e2e;
+    font-size:clamp(20px,2.2vw,28px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+  .stext h4{color:#fff;font-size:clamp(17px,1.9vw,23px);font-weight:900;margin-bottom:.15em}
+  .stext h4 b{color:var(--lemon)}
+  .stext p{color:var(--sub);font-size:clamp(14px,1.6vw,19px);font-weight:600;line-height:1.5}
+  .slido-note{color:var(--sub);font-weight:700;font-size:clamp(14px,1.5vw,18px);
+    border:1px dashed var(--line);border-radius:14px;padding:.6em 1em;opacity:.9}
+  /* 主頁選系 */
+  .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(14px,2vw,30px);width:100%;max-width:960px}
+  .dcol{display:flex;flex-direction:column;gap:10px}
+  .dhead{color:var(--lemon-soft);font-weight:900;letter-spacing:.12em;font-size:clamp(15px,1.7vw,21px);
+    text-align:center;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  .dept{display:flex;align-items:center;justify-content:center;background:var(--card);border:1.5px solid var(--line);
+    border-radius:14px;padding:.85em 1em;color:#cdd6f5;font-weight:800;font-size:clamp(15px,1.7vw,21px);
+    cursor:pointer;font-family:inherit;transition:.2s;position:relative}
+  .dept:hover{border-color:rgba(255,214,10,.5);color:#fff;transform:translateY(-2px)}
+  .dept.active{border-color:var(--lemon);color:#fff;background:rgba(255,214,10,.10);
+    box-shadow:0 0 0 2px rgba(255,214,10,.35),0 10px 30px rgba(255,214,10,.16)}
+  .dept.active::after{content:'示範';position:absolute;top:-9px;right:-9px;background:var(--lemon);color:#0a0e2e;
+    font-size:11px;font-weight:900;padding:2px 7px;border-radius:7px;letter-spacing:.06em}
+  .dept.soon{opacity:.6}
+  /* Part 轉場 */
+  .pe{color:var(--lemon-soft);font-weight:900;letter-spacing:.34em;font-size:clamp(14px,1.6vw,20px)}
+  .pno{font-weight:900;color:var(--lemon);line-height:.95;font-size:clamp(70px,12vw,160px);
+    text-shadow:0 12px 44px rgba(255,214,10,.28)}
+  .plabel{font-weight:900;font-size:clamp(22px,3.1vw,42px)}
+  .pdots{display:flex;gap:11px}
+  .pdot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.2)}
+  .pdot.on{background:var(--lemon);box-shadow:0 0 12px rgba(255,214,10,.6)}
+  /* HUD */
+  #hud{position:fixed;z-index:5;left:0;right:0;bottom:0;display:flex;align-items:center;gap:10px;
+    padding:12px clamp(14px,3vw,28px);pointer-events:none}
+  #hud>*{pointer-events:auto}
+  .hbtn{background:rgba(255,255,255,.07);border:1px solid var(--line);color:#fff;font-weight:800;font-size:14px;
+    border-radius:999px;padding:.5em 1em;cursor:pointer;font-family:inherit;transition:.2s}
+  .hbtn:hover{background:rgba(255,214,10,.16);border-color:rgba(255,214,10,.5)}
+  #chapter{color:var(--lemon-soft);font-weight:800;font-size:14px}
+  #progress{margin-left:auto;color:rgba(255,255,255,.5);font-weight:700;font-size:13px;letter-spacing:.05em}
+  #ophint{position:fixed;left:50%;bottom:13px;transform:translateX(-50%);z-index:4;color:rgba(255,255,255,.28);
+    font-size:12px;font-weight:600;letter-spacing:.04em;pointer-events:none;white-space:nowrap}
+  @media(max-width:680px){#ophint{display:none}.grid,.grid.four{grid-template-columns:repeat(2,1fr)}
+    .home-grid{grid-template-columns:1fr}}
+  /* 選單 / 彈窗 */
+  .overlay{position:fixed;inset:0;z-index:9;background:rgba(7,11,34,.86);backdrop-filter:blur(6px);
+    display:none;align-items:center;justify-content:center;padding:24px}
+  .overlay.open{display:flex}
+  .mpanel{position:relative;width:100%;max-width:760px;max-height:86vh;overflow:auto;background:rgba(16,18,52,.96);
+    border:1px solid var(--line);border-radius:24px;padding:clamp(20px,3vw,34px)}
+  .mpanel h3{color:var(--lemon);font-size:clamp(18px,2vw,24px);margin-bottom:14px}
+  .mchap>span{display:block;color:var(--lemon-soft);font-weight:900;font-size:13px;letter-spacing:.1em;
+    margin:16px 0 8px}
+  .mitem{display:flex;gap:.6em;width:100%;text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--line);
+    color:#fff;border-radius:11px;padding:.6em .9em;margin-bottom:6px;font-family:inherit;font-weight:700;
+    font-size:14.5px;cursor:pointer;transition:.18s}
+  .mitem:hover{background:rgba(255,214,10,.14);border-color:rgba(255,214,10,.5)}
+  .mitem .pg{color:var(--lemon);font-weight:900;min-width:2.6em}
+  .mclose{position:absolute;top:18px;right:22px;background:none;border:none;color:#fff;font-size:30px;cursor:pointer}
+  .soonbox{max-width:460px;text-align:center}
+  .soonbox h3{color:var(--lemon);font-size:clamp(20px,2.4vw,28px);margin-bottom:12px}
+  .soonbox p{color:var(--sub);font-weight:600;line-height:1.6;font-size:clamp(15px,1.7vw,19px);margin-bottom:18px}
+  #fade{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;
+    background:radial-gradient(60% 60% at 50% 50%,rgba(160,130,255,.18),transparent 70%);transition:opacity .22s ease}
+  @media (prefers-reduced-motion: reduce){.neb,.star{animation:none!important}#stage{transition:none}
+    [data-seq]{transition:opacity .01s}}
+</style>
+</head>
+<body>
+  <div id="space"><div class="neb"></div><div id="stars"></div><div id="egg"></div></div>
+  <div id="fade"></div>
+  <main id="stage"></main>
+
+  <div id="hud">
+    <button class="hbtn" id="homeBtn">🏠 主頁</button>
+    <button class="hbtn" id="menuBtn">☰ 章節</button>
+    <div id="chapter"></div>
+    <div id="progress"></div>
+  </div>
+  <div id="ophint">操作方式：點畫面 / → 前進，← 後退，M 章節，H 主頁，F 全螢幕</div>
+
+  <div class="overlay" id="menu"><div class="mpanel"><button class="mclose" id="menuClose">×</button>
+    <h3>章節導覽（點頁碼直接跳）</h3><div id="menuList"></div></div></div>
+
+  <div class="overlay" id="soon"><div class="mpanel soonbox"><button class="mclose" id="soonClose">×</button>
+    <h3 id="soonTitle"></h3><p id="soonMsg"></p>
+    <button class="hbtn" id="soonBack" style="border-color:rgba(255,214,10,.5)">返回主頁重選</button></div></div>
+
+<script>
+/* ===== SVG 插畫庫 ===== */
+const I={
+ chip:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round"><rect x="34" y="34" width="52" height="52" rx="8" fill="rgba(255,214,10,.12)"/><rect x="48" y="48" width="24" height="24" rx="4" fill="#3D7BE0"/>${[40,52,64,76].map(y=>`<line x1="20" y1="${y}" x2="34" y2="${y}"/><line x1="86" y1="${y}" x2="100" y2="${y}"/>`).join('')}${[40,52,64,76].map(x=>`<line x1="${x}" y1="20" x2="${x}" y2="34"/><line x1="${x}" y1="86" x2="${x}" y2="100"/>`).join('')}</g></svg>`,
+ circuit:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M16 60 H40 M80 60 H104"/><rect x="40" y="48" width="40" height="24" rx="6" fill="rgba(61,123,224,.25)"/><path d="M60 16 V40 M60 80 V104"/><circle cx="16" cy="60" r="5" fill="#FFD60A"/><circle cx="104" cy="60" r="5" fill="#FFD60A"/><circle cx="60" cy="16" r="5" fill="#3FA66A"/><circle cx="60" cy="104" r="5" fill="#3FA66A"/></g></svg>`,
+ antenna:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round"><path d="M60 96 V52"/><circle cx="60" cy="46" r="8" fill="#FFD60A"/><path d="M44 96 H76"/><path d="M40 40a28 28 0 0 1 40 0" stroke="#3D7BE0"/><path d="M30 30a42 42 0 0 1 60 0" stroke="rgba(61,123,224,.55)"/></g></svg>`,
+ rocket:`<svg viewBox="0 0 120 120"><g stroke-linejoin="round"><path d="M60 14c14 10 20 28 20 46l-12 12H52L40 60c0-18 6-36 20-46Z" fill="rgba(255,214,10,.15)" stroke="#FFD60A" stroke-width="3"/><circle cx="60" cy="48" r="9" fill="#3D7BE0" stroke="#fff" stroke-width="2"/><path d="M40 72l-12 8 12 2Z M80 72l12 8-12 2Z" fill="#E2553E"/><path d="M52 84h16l-4 18-4 6-4-6Z" fill="#FFD60A"/></g></svg>`,
+ planet:`<svg viewBox="0 0 120 120"><circle cx="60" cy="56" r="28" fill="rgba(61,123,224,.3)" stroke="#FFD60A" stroke-width="3"/><ellipse cx="60" cy="60" rx="46" ry="14" fill="none" stroke="#FFE873" stroke-width="3" transform="rotate(-18 60 60)"/><circle cx="50" cy="48" r="5" fill="rgba(255,255,255,.4)"/></svg>`,
+ astronaut:`<svg viewBox="0 0 120 120"><g stroke="#FFD60A" stroke-width="3"><circle cx="60" cy="40" r="20" fill="rgba(255,255,255,.92)"/><path d="M48 38a14 12 0 0 1 24 0Z" fill="#3D7BE0"/><rect x="42" y="60" width="36" height="34" rx="12" fill="rgba(255,255,255,.85)"/><path d="M42 70l-12 10 M78 70l12-2" stroke-linecap="round"/></g></svg>`,
+ lightbulb:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round"><path d="M60 20a26 26 0 0 1 16 46c-4 3-6 7-6 12H50c0-5-2-9-6-12a26 26 0 0 1 16-46Z" fill="rgba(255,214,10,.16)"/><path d="M50 90h20 M53 100h14"/><path d="M60 8v8 M22 30l6 6 M98 30l-6 6" stroke="#FFE873"/></g></svg>`,
+ gear:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3"><circle cx="60" cy="60" r="20" fill="rgba(63,166,106,.25)"/><circle cx="60" cy="60" r="8"/>${Array.from({length:8}).map((_,i)=>{const a=i*45*Math.PI/180;return `<line x1="${(60+24*Math.cos(a)).toFixed(1)}" y1="${(60+24*Math.sin(a)).toFixed(1)}" x2="${(60+33*Math.cos(a)).toFixed(1)}" y2="${(60+33*Math.sin(a)).toFixed(1)}" stroke-linecap="round"/>`}).join('')}</g></svg>`,
+ telescope:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="30" y="44" width="52" height="18" rx="6" fill="rgba(61,123,224,.25)" transform="rotate(-20 56 53)"/><path d="M50 64L42 98 M64 58l14 30"/><path d="M86 30l4 4 M96 24l5 1" stroke="#FFE873"/></g></svg>`,
+ trophy:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M40 28h40v18a20 20 0 0 1-40 0Z" fill="rgba(255,214,10,.2)"/><path d="M40 32H26v8a14 14 0 0 0 14 12 M80 32h14v8a14 14 0 0 1-14 12"/><path d="M60 66v16 M46 94h28 M52 82h16v12H52Z" fill="rgba(255,214,10,.12)"/></g></svg>`,
+ question:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round"><circle cx="60" cy="60" r="34" fill="rgba(61,123,224,.2)"/><path d="M48 50a12 12 0 0 1 22 6c0 8-10 8-10 16" stroke-width="4"/><circle cx="60" cy="86" r="3.4" fill="#FFD60A" stroke="none"/></g></svg>`,
+ lunch:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round"><rect x="28" y="46" width="64" height="44" rx="10" fill="rgba(226,85,62,.25)"/><path d="M28 64h64"/><circle cx="46" cy="55" r="4" fill="#3FA66A"/><rect x="58" y="51" width="22" height="8" rx="4" fill="#FFE873"/><path d="M40 36c0-6 6-6 6 0 M58 34c0-6 6-6 6 0 M76 36c0-6 6-6 6 0" stroke="#FFE873"/></g></svg>`,
+ notion:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round"><rect x="34" y="24" width="52" height="72" rx="8" fill="rgba(255,255,255,.06)"/><path d="M46 42h28 M46 56h28 M46 70h18" stroke-linecap="round"/></g></svg>`,
+ star:`<svg viewBox="0 0 120 120"><path d="M60 22l11 24 26 3-19 18 5 26-23-13-23 13 5-26-19-18 26-3Z" fill="rgba(255,214,10,.2)" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round"/></svg>`,
+ rise:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M26 86L52 60l16 14 26-30"/><path d="M84 44h16v16"/><circle cx="100" cy="30" r="3" fill="#FFE873" stroke="none"/></g></svg>`,
+ reflect:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round"><circle cx="56" cy="54" r="26" fill="rgba(61,123,224,.2)"/><path d="M48 52a10 8 0 0 1 18 0"/><path d="M86 78a18 18 0 1 1-6-13" stroke="#FFE873"/><path d="M80 56v10h-10" stroke="#FFE873"/></g></svg>`,
+ film:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round"><rect x="26" y="34" width="68" height="52" rx="10" fill="rgba(61,123,224,.2)"/><path d="M52 50l20 12-20 12Z" fill="#FFD60A"/></g></svg>`,
+ hand:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M48 60V36a6 6 0 0 1 12 0v20 M60 56V32a6 6 0 0 1 12 0v28 M72 60V42a6 6 0 0 1 12 0v30c0 14-10 22-24 22-12 0-18-6-24-16l-8-14a6 6 0 0 1 10-7l6 8" fill="rgba(255,214,10,.12)"/></g></svg>`,
+ flag:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M42 24v72"/><path d="M42 28h40l-8 12 8 12H42Z" fill="rgba(226,85,62,.3)"/></g></svg>`,
+ path:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round"><path d="M30 94c10-20 0-28 16-40s10-30 30-40" stroke-dasharray="2 9"/><circle cx="30" cy="94" r="5" fill="#3FA66A"/><circle cx="76" cy="14" r="6" fill="#FFD60A"/></g></svg>`,
+ car:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round"><path d="M24 70l8-18h44l12 18h8a6 6 0 0 1 6 6v8H22v-8a6 6 0 0 1 6-6Z" fill="rgba(61,123,224,.25)"/><circle cx="42" cy="84" r="7"/><circle cx="84" cy="84" r="7"/><path d="M40 52l2-8h28" stroke="#FFE873"/></g></svg>`,
+ brain:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round"><path d="M52 30a14 14 0 0 0-14 18 12 12 0 0 0 0 22 12 12 0 0 0 14 14V30Z" fill="rgba(63,166,106,.22)"/><path d="M68 30a14 14 0 0 1 14 18 12 12 0 0 1 0 22 12 12 0 0 1-14 14V30Z" fill="rgba(255,214,10,.14)"/></g></svg>`,
+ pulse:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="60" cy="60" r="34" stroke="#3D7BE0"/><path d="M30 60h12l6-16 10 32 8-22 6 6h10"/></g></svg>`,
+ energy:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M64 22L40 64h18l-6 34 30-46H62Z" fill="rgba(255,214,10,.2)"/></g></svg>`,
+ cpu:`<svg viewBox="0 0 120 120"><g fill="none" stroke="#FFD60A" stroke-width="3"><rect x="38" y="38" width="44" height="44" rx="6" fill="rgba(61,123,224,.22)"/><rect x="50" y="50" width="20" height="20" rx="3"/><path d="M50 30v8 M70 30v8 M50 82v8 M70 82v8 M30 50h8 M30 70h8 M82 50h8 M82 70h8" stroke-linecap="round"/></g></svg>`,
+};
+/* 反應圖示（統一風格） */
+const R={
+ heart:`<svg viewBox="0 0 24 24"><path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11Z" fill="#FF6FA3"/></svg>`,
+ thumb:`<svg viewBox="0 0 24 24"><path d="M8 10l4-7c2 0 3 1 3 3v3h4a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 1H8Z" fill="#FFD60A"/><rect x="3" y="10" width="4" height="11" rx="1" fill="#FFE873"/></svg>`,
+ smile:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FFD60A"/><circle cx="8.4" cy="10" r="1.5" fill="#0a0e2e"/><circle cx="15.6" cy="10" r="1.5" fill="#0a0e2e"/><path d="M7.4 13.4a5 4.4 0 0 0 9.2 0Z" fill="#0a0e2e"/></svg>`,
+ clap:`<svg viewBox="0 0 24 24"><path d="M9 13l-3-3a1.6 1.6 0 0 1 2-2l5 4 4-3a1.6 1.6 0 0 1 2 3l-6 7-7-2Z" fill="#FFB84D"/><path d="M5 4l1 3 M3 9l3 1 M9 3l1 3" stroke="#FFE873" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+ down:`<svg viewBox="0 0 24 24"><path d="M16 14l-4 7c-2 0-3-1-3-3v-3H5a2 2 0 0 1-2-2l2-7a2 2 0 0 1 2-1h9Z" fill="#9FB0D8"/><rect x="17" y="3" width="4" height="11" rx="1" fill="#C2D0EE"/></svg>`,
+};
+const QEMO=[R.heart,R.thumb,R.smile,R.clap];                 /* 題目選項：❤️👍😄👏 */
+const SCORE=[{i:R.heart,s:'7 分',t:'非常喜歡',c:'s7'},{i:R.thumb,s:'5 分',t:'喜歡',c:'s5'},
+             {i:R.clap,s:'3 分',t:'還好',c:'s3'},{i:R.down,s:'1 分',t:'不太喜歡',c:'s1'}]; /* 評分：❤️7 👍5 👏3 👎1 */
+const PCOL=['var(--m-blue)','var(--m-green)','var(--m-yellow)','var(--m-red)'];
+
+/* ===== 主頁營隊 ===== */
+const DEPTS=[
+ {g:'一類組',items:['法律營','商管營','財經營','行銷營']},
+ {g:'二類組',items:['電機營','資工營','AI 營','材料營']},
+ {g:'三類組',items:['牙醫營','醫學營','藥學營','心理營']},
+];
+const ACTIVE='電機營';        /* 目前只有電機營有內容 */
+const FLOW_START=1;           /* 電機營流程從第 1 個場景開始 */
+
+/* ===== 場景 ===== */
+const SCENES=[
+{ch:'主頁',m:'主頁 · 選擇營隊',type:'home'},
+
+/* ===== 電機系 · 科系所學 ===== */
+{ch:'電機系科系所學',m:'Part 1：科系所學',type:'part',no:1,label:'電機系科系所學'},
+
+{ch:'電機系科系所學',m:'測驗 · 什麼是晶片',type:'quiz',kicker:'科系所學 · 第 1 題',art:'chip',
+ q:'下面哪一個，最接近「晶片（IC）」的意思？',
+ opts:['用來存照片、影片的記憶卡','把成千上萬個電晶體，微縮整合在一小塊半導體上的電路','一片很薄、會發光的玻璃面板','一種特別耐用的金屬電線'],ans:1,
+ explain:'晶片就像一座超迷你城市，把上萬個微型開關（電晶體）擠進指甲大小的矽片裡——手機、電腦能思考，全靠它。'},
+{ch:'電機系科系所學',m:'測驗 · 電路學',type:'quiz',kicker:'科系所學 · 第 2 題',art:'circuit',
+ q:'電機系最基礎的「電路學」，在研究什麼？',
+ opts:['電流、電壓在電阻、電容等元件裡怎麼流動、怎麼分配','怎麼把電線繞得最整齊漂亮','怎麼用程式畫出 3D 動畫','怎麼計算一棟大樓要用多少水泥'],ans:0,
+ explain:'電路學是電機的「九九乘法」——搞懂電怎麼跑，之後不管做晶片、通訊還是機器人，都從這裡長出來。'},
+{ch:'電機系科系所學',m:'測驗 · 通訊／Wi-Fi',type:'quiz',kicker:'科系所學 · 第 3 題',art:'antenna',
+ q:'你每天用的 Wi-Fi、手機通訊，靠電機系的哪個本領？',
+ opts:['把資料變成電磁波，在空中傳遞（訊號與通訊）','用很長的水管把聲音送過去','靠化學反應把訊息「燒」進空氣裡','用齒輪、皮帶把訊號一格一格轉'],ans:0,
+ explain:'看不見的訊號其實一直在飛！電機系把資料編碼成電磁波送出去、再精準接回來，這就是通訊的魔法。'},
+
+{ch:'電機系科系所學',m:'過場 · 進入課程探索',type:'cover',art:'rocket',
+ title:'準備好了嗎？',sub:'好，接下來就請同學們進入到科系所學的課程內容來進行探索吧！'},
+
+{ch:'電機系科系所學',m:'Part 2：科系所學',type:'part',no:2,label:'電機系科系所學'},
+
+{ch:'電機系科系所學',m:'複習 · 電機系全景',type:'demo',kicker:'快速複習 · 電機系到底在幹嘛',art:'planet',
+ title:'電機系，其實是一整個<span class="hl">宇宙</span>',cards:[
+   {i:'energy',h:'電力與能源',p:'發電、輸電、馬達、電動車的「動力心臟」'},
+   {i:'chip',h:'電子與半導體',p:'設計晶片、電路板，科技產品的大腦'},
+   {i:'antenna',h:'通訊與訊號',p:'Wi-Fi、5G、手機，把資訊變電波傳遞'},
+   {i:'gear',h:'控制與機器人',p:'讓機器、無人機、手臂乖乖聽話地動'},
+   {i:'cpu',h:'計算機與軟硬體',p:'寫程式＋懂硬體，把兩邊整合起來'},
+   {i:'telescope',h:'光電與感測',p:'螢幕、光纖、感測器，把光和訊號互換'}]},
+{ch:'電機系科系所學',m:'測驗 · 同學的樣子',type:'quiz',kicker:'認識電機系 · 第 4 題',art:'astronaut',
+ q:'讀電機系的同學，通常是什麼樣的人？',
+ opts:['對「東西為什麼會動」很好奇，喜歡拆開來看、動手試','看到數字就想逃','只想背標準答案、不喜歡問為什麼','對科技沒興趣、也不想碰電腦'],ans:0,
+ explain:'好奇＋愛動手，是電機人的共同點。不必一開始就很厲害，重點是想搞懂「它怎麼運作的？」'},
+{ch:'電機系科系所學',m:'測驗 · 需要的特質',type:'quiz',kicker:'認識電機系 · 第 5 題',art:'lightbulb',
+ q:'想念電機系，哪些特質會很有幫助？',
+ opts:['還不錯的數學邏輯＋願意動手、不怕失敗的耐心','一定要天生是天才，普通人念不來','只要會畫畫就好，完全用不到數學','體力好、跑得快就夠了'],ans:0,
+ explain:'數學是工具、耐心是燃料。願意一次次試、從失敗裡找答案的人，在電機系會走得很穩。'},
+
+{ch:'電機系科系所學',m:'影片 · 第一部影片',type:'cover',art:'film',
+ title:'影片時間',sub:'那接下來，就讓我們去看一下<span class="hl">第一部影片</span>吧！'},
+
+{ch:'電機系科系所學',m:'Part 3：科系所學',type:'part',no:3,label:'電機系科系所學'},
+
+{ch:'電機系科系所學',m:'反思法 · RAP',type:'frame',kicker:'看完影片，停下來想一想',art:'reflect',
+ title:'用 <span class="hl">RAP</span> 來反思',steps:[
+   {b:'R',c:'var(--m-blue)',h:'Review｜回顧',p:'回想剛剛探索的——電機系在學什麼？是什麼樣的人在念？'},
+   {b:'A',c:'var(--m-green)',h:'Ask｜自問',p:'問問自己：這些內容，我喜歡嗎？有沒有讓我眼睛發亮的地方？'},
+   {b:'P',c:'var(--m-yellow)',h:'Present｜表達',p:'把感覺說出來——等一下用表情符號評分，加上你的想法，讓我們知道你喜歡的程度。'}]},
+
+{ch:'電機系科系所學',m:'喜好 · 學到的內容',type:'score',kicker:'喜好探索 · 1／3',art:'star',
+ q:'這科系<span class="hl">學到的內容</span>，你喜歡嗎？'},
+{ch:'電機系科系所學',m:'喜好 · 學習路線',type:'score',kicker:'喜好探索 · 2／3',art:'path',
+ q:'大學四年要走的<span class="hl">學習路線</span>，你喜歡嗎？'},
+{ch:'電機系科系所學',m:'喜好 · 學習方式',type:'score',kicker:'喜好探索 · 3／3',art:'hand',
+ q:'這種「<span class="hl">動手探索、解決問題</span>」的學習方式，適合你嗎？'},
+
+{ch:'電機系科系所學',m:'過場 · 到 Notion 撰寫',type:'cover',art:'notion',
+ title:'換你出手',sub:'如果沒有問題的話，<span class="hl">讓我們到 Notion 講義去撰寫吧！</span>'},
+
+{ch:'電機系科系所學',m:'Part 4：科系所學',type:'part',no:4,label:'電機系科系所學'},
+
+{ch:'電機系科系所學',m:'方法 · SMART 總覽',type:'frame',kicker:'學習歷程怎麼寫',art:'notion',
+ title:'用 <span class="hl">SMART</span> 五步，不卡關',steps:[
+   {b:'S',c:'var(--m-blue)',h:'Summarize｜摘要',p:'這份檔案想呈現的重點，先寫在最前面。'},
+   {b:'M',c:'var(--m-green)',h:'Mention｜說明',p:'說明你參加的動機，以及這個課程／活動到底在做什麼。'},
+   {b:'A',c:'var(--m-yellow)',h:'Action｜行動',p:'記錄你做了哪些具體的事、採取了哪些行動。'},
+   {b:'R',c:'var(--m-red)',h:'Review｜反思',p:'反思喜不喜歡、原因，以及接下來想做什麼。'},
+   {b:'T',c:'var(--m-blue)',h:'Template｜模板',p:'選一個模板輸出——Canva、Notion 或其他方式都可以。'}]},
+{ch:'電機系科系所學',m:'Notion · Action 行動',type:'frame',kicker:'Notion 撰寫 ①',art:'hand',
+ title:'<b style="color:var(--lemon)">A</b>　Action 你做了什麼',steps:[
+   {b:'1',c:'var(--m-yellow)',h:'把「實際做過的事」寫下來',p:'上了哪堂課、玩了哪些測驗與遊戲、問了學長姐什麼。'},
+   {b:'2',c:'var(--m-green)',h:'越具體越好',p:'什麼時間、做了什麼、怎麼做的——細節越清楚越有說服力。'},
+   {b:'3',c:'var(--m-blue)',h:'舉個例子',p:'「我完成了電機系的 5 題探索測驗，並在喜好評分按了 ❤️。」'}]},
+{ch:'電機系科系所學',m:'Notion · Review 反思',type:'frame',kicker:'Notion 撰寫 ②',art:'reflect',
+ title:'<b style="color:var(--lemon)">R</b>　Review 你的反思',steps:[
+   {b:'1',c:'var(--m-red)',h:'我喜歡這個科系嗎？',p:'為什麼喜歡／不喜歡？試著說出原因。'},
+   {b:'2',c:'var(--m-yellow)',h:'哪裡讓我有感覺？',p:'哪個部分讓我眼睛發亮、想再多看一點？'},
+   {b:'3',c:'var(--m-green)',h:'寫下「下一步」',p:'我想再做什麼？查資料、問人、找相關體驗都算。'}]},
+
+/* ===== 電機系 · 未來發展 ===== */
+{ch:'電機系未來發展',m:'Part 1：未來發展',type:'part',no:1,label:'電機系未來發展'},
+
+{ch:'電機系未來發展',m:'測驗 · 畢業出路',type:'quiz',kicker:'未來發展 · 第 1 題',art:'rise',
+ q:'電機系畢業後，最主要的出路大多落在哪裡？',
+ opts:['半導體與科技業：晶片設計、電子、通訊、電力、軟硬體整合','只有電力公司可以去','主要是修理手機和電腦','大多去開餐廳'],ans:0,
+ explain:'電機是科技業的地基。從手機晶片到電動車、從 5G 到資料中心，背後都需要大量電機人。'},
+{ch:'電機系未來發展',m:'測驗 · IC 設計工程師',type:'quiz',kicker:'未來發展 · 第 2 題',art:'cpu',
+ q:'半導體公司裡的「IC 設計工程師」，主要在做什麼？',
+ opts:['在工廠裡負責搬晶圓','設計晶片裡的電路，決定晶片怎麼運作、能做哪些事','幫晶片拍宣傳照','負責把晶片賣給客人'],ans:1,
+ explain:'IC 設計像在指甲大的空間裡「畫城市規劃」——決定電路怎麼走，晶片才會聰明又省電。'},
+{ch:'電機系未來發展',m:'測驗 · 跨領域',type:'quiz',kicker:'未來發展 · 第 3 題',art:'path',
+ q:'電機的底子（電路、訊號、寫程式）除了科技業，還能跨進哪些領域？',
+ opts:['什麼都跨不了，只能待在電子廠','醫療電子、電動車、AI、機器人、太空與綠能等很多領域','只能完全轉行，學的都用不到','只能做文書工作'],ans:1,
+ explain:'電機是「萬用底盤」。哪裡有電、有訊號、有運算，哪裡就用得上——選擇權其實很大。'},
+
+{ch:'電機系未來發展',m:'過場 · 進入未來發展',type:'cover',art:'rocket',
+ title:'下一站',sub:'好，接下來換我們看看，電機系的「<span class="hl">未來發展</span>」長什麼樣子！'},
+
+{ch:'電機系未來發展',m:'Part 2：未來發展',type:'part',no:2,label:'電機系未來發展'},
+
+{ch:'電機系未來發展',m:'複習 · 產業地圖',type:'demo',kicker:'快速複習 · 畢業後能走的路',art:'rise',
+ title:'電機人的<span class="hl">產業地圖</span>',four:true,cards:[
+   {i:'chip',h:'半導體／IC 設計',p:'台積電、聯發科…台灣的護國群山'},
+   {i:'car',h:'電動車與車用電子',p:'馬達、電池、車載晶片與系統'},
+   {i:'brain',h:'AI 與資料中心',p:'AI 晶片、伺服器、運算基礎建設'},
+   {i:'antenna',h:'通訊與 5G',p:'網路、基地台、衛星通訊'},
+   {i:'energy',h:'綠能與電力',p:'太陽能、風電、儲能與電網'},
+   {i:'pulse',h:'醫療電子與穿戴',p:'感測器、影像、健康監測裝置'},
+   {i:'gear',h:'機器人與自動化',p:'智慧製造、手臂、無人載具'},
+   {i:'rocket',h:'太空與國防',p:'衛星、雷達、航太電子系統'}]},
+{ch:'電機系未來發展',m:'測驗 · 半導體為何需要電機',type:'quiz',kicker:'認識未來發展 · 第 4 題',art:'chip',
+ q:'為什麼半導體（像台積電那類公司）特別需要電機系的人？',
+ opts:['因為晶片從設計到製造，大量用到電路、訊號、材料與製程知識','因為他們需要很多人掃地','因為電機系的人都很會煮飯','因為這跟電一點關係都沒有'],ans:0,
+ explain:'一顆晶片要經過設計、製造、測試一路關卡，每一關都踩在電機的核心知識上——所以特別搶電機人才。'},
+{ch:'電機系未來發展',m:'測驗 · 未來趨勢',type:'quiz',kicker:'認識未來發展 · 第 5 題',art:'brain',
+ q:'下面哪一個，是未來幾年很被看好、和電機高度相關的趨勢？',
+ opts:['AI 晶片、電動車、再生能源、機器人','這些其實都和電機無關','電機產業即將消失','未來不會再用到晶片'],ans:0,
+ explain:'AI、電動車、綠能、機器人——這幾條大浪潮，核心全都離不開電機，未來十年的舞台很大。'},
+
+{ch:'電機系未來發展',m:'Part 3：未來發展',type:'part',no:3,label:'電機系未來發展'},
+
+{ch:'電機系未來發展',m:'喜好 · 未來出路',type:'score',kicker:'喜好探索 · 1／3',art:'rise',
+ q:'這些未來出路（設計晶片、研發新科技…），你<span class="hl">嚮往</span>嗎？'},
+{ch:'電機系未來發展',m:'喜好 · 工作型態',type:'score',kicker:'喜好探索 · 2／3',art:'gear',
+ q:'這種「動手研發、解決問題」的<span class="hl">工作型態</span>，適合你嗎？'},
+{ch:'電機系未來發展',m:'喜好 · 願意投入',type:'score',kicker:'喜好探索 · 3／3',art:'star',
+ q:'為了走到這些未來，你<span class="hl">願意投入</span>時間去學嗎？'},
+
+{ch:'電機系未來發展',m:'Part 4：未來發展',type:'part',no:4,label:'電機系未來發展'},
+
+{ch:'電機系未來發展',m:'過場 · 到 Notion 撰寫',type:'cover',art:'notion',
+ title:'再寫一段',sub:'沒問題的話，<span class="hl">讓我們到 Notion 講義去撰寫吧！</span>把「未來發展」這段也寫下來。'},
+{ch:'電機系未來發展',m:'Notion · Action 行動',type:'frame',kicker:'Notion 撰寫 ①',art:'hand',
+ title:'<b style="color:var(--lemon)">A</b>　Action 你做了什麼',steps:[
+   {b:'1',c:'var(--m-yellow)',h:'把這段「實際做過的事」寫下來',p:'看了哪些未來出路、玩了哪些題目、有什麼新發現。'},
+   {b:'2',c:'var(--m-green)',h:'越具體越好',p:'你最有印象的產業是哪個？為什麼？把過程寫清楚。'},
+   {b:'3',c:'var(--m-blue)',h:'舉個例子',p:'「我了解了 IC 設計工程師在做什麼，並對 AI 晶片特別有興趣。」'}]},
+{ch:'電機系未來發展',m:'Notion · Review 反思',type:'frame',kicker:'Notion 撰寫 ②',art:'reflect',
+ title:'<b style="color:var(--lemon)">R</b>　Review 你的反思',steps:[
+   {b:'1',c:'var(--m-red)',h:'這些未來，我嚮往嗎？',p:'哪條路讓我心動？為什麼？'},
+   {b:'2',c:'var(--m-yellow)',h:'我和它合得來嗎？',p:'這種工作型態、需要的能力，符合我的樣子嗎？'},
+   {b:'3',c:'var(--m-green)',h:'寫下「下一步」',p:'想更靠近的話，我接下來可以先做什麼？'}]},
+
+/* ===== 收尾 ===== */
+{ch:'收尾',m:'收尾 · 學習總結',type:'cover',art:'flag',
+ title:'今天的探索，先到這裡',sub:'科系所學 × 未來發展，你已經摸到<span class="hl">電機系的輪廓</span>了。接下來，換個方式來驗收——'},
+{ch:'收尾',m:'競賽 · Kahoot',type:'cover',art:'trophy',
+ title:'來玩 <span class="hl">Kahoot</span>！',sub:'準備好了嗎？我們來一場小競賽，看看你記住多少、答對多少！打開 Kahoot、輸入 PIN，開始囉～'},
+{ch:'收尾',m:'午餐前 · 問學長姐 Slido',type:'frame',kicker:'吃飯前，先問問學長姐',art:'question',
+ title:'到 <span class="hl">Slido</span>，用 USB 三個方向問',steps:[
+   {b:'U',c:'var(--m-blue)',h:'Usually｜平常',p:'學長姐平常都在做什麼？課堂、實驗、社團，日常長什麼樣？'},
+   {b:'S',c:'var(--m-green)',h:'Situation｜實況',p:'科系裡真實的狀況——和老師怎麼互動、實際在研究什麼、念起來辛不辛苦？'},
+   {b:'B',c:'var(--m-yellow)',h:'Be Back｜重來',p:'如果回到高中，你會給當時的自己、或給我們什麼建議？'}],
+ note:'其他想問的也都可以——直接把問題打在 Slido 上！（此處可放 Slido 畫面）'},
+{ch:'收尾',m:'午餐 · 1:30 回來',type:'cover',art:'lunch',
+ title:'午餐時間到！',sub:'記得先去吃飯、補充能量～ 下午 <span class="hl">1:30 準時回來</span>，別遲到喔！'},
+];
+
+/* ===== 渲染 ===== */
+const stage=document.getElementById('stage');
+let idx=0,step=0,maxStep=0;
+const artHTML=n=>n?`<div class="art">${I[n]||''}</div>`:'';
+
+function homeHTML(){
+  const cols=DEPTS.map(col=>`<div class="dcol"><div class="dhead">${col.g}</div>${
+    col.items.map(name=>{const on=name===ACTIVE;
+      return `<button class="dept ${on?'active':'soon'}" data-dept="${name}">${name}</button>`}).join('')
+  }</div>`).join('');
+  return `<div class="scene">
+    <div class="kicker">CIA 科系星球</div>
+    <div class="title">選擇你今天要帶的<span class="hl">營隊</span></div>
+    <div class="sub" style="font-size:clamp(15px,1.7vw,20px)">主持人：點選下方營隊進入課程（目前以 <b style="color:var(--lemon)">電機營</b> 示範，其餘陸續上線）</div>
+    <div class="home-grid">${cols}</div>
+  </div>`;
+}
+function partHTML(s){
+  const dots=[1,2,3,4].map(n=>`<span class="pdot${n<=s.no?' on':''}"></span>`).join('');
+  return `<div class="scene">
+    <div class="pe">PART</div>
+    <div class="pno">0${s.no}</div>
+    <div class="plabel">${s.label}</div>
+    <div class="pdots">${dots}</div>
+  </div>`;
+}
+function quizHTML(s){
+  const opts=s.opts.map((t,i)=>`<div class="opt${i===s.ans?' correct':''}">
+    <div class="react">${QEMO[i]}</div><div class="otext">${t}</div><div class="check">✓</div></div>`).join('');
+  return `<div class="scene">
+    <div class="kicker">${s.kicker}</div>${artHTML(s.art)}
+    <div class="vote">選一個就好，用 Google Meet 表情符號投票（或打在聊天室）</div>
+    <div class="q">${s.q}</div>
+    <div class="options">${opts}</div>
+    <div class="explain" data-seq="1">${s.explain}</div></div>`;
+}
+function scoreHTML(s){
+  const cards=SCORE.map(o=>`<div class="scard ${o.c}"><div class="si">${o.i}</div><b>${o.s}</b><span>${o.t}</span></div>`).join('');
+  return `<div class="scene">
+    <div class="kicker">${s.kicker}</div>${artHTML(s.art)}
+    <div class="q">${s.q}</div>
+    <div class="semo" data-seq="1">${cards}</div>
+    <div class="hint" data-seq="1">在 Google Meet 按下對應的表情符號，讓我們快速統計！</div></div>`;
+}
+function demoHTML(s){
+  const cards=s.cards.map(c=>`<div class="gcard"><div class="gi">${I[c.i]||''}</div><h4>${c.h}</h4><p>${c.p}</p></div>`).join('');
+  return `<div class="scene"><div class="kicker">${s.kicker}</div><div class="title">${s.title}</div>
+    <div class="grid${s.four?' four':''}" data-seq="1">${cards}</div></div>`;
+}
+function frameHTML(s){
+  const steps=s.steps.map((st,i)=>`<div class="step" data-seq="${i+1}"><div class="badge" style="background:${st.c}">${st.b}</div>
+    <div class="stext"><h4>${st.h}</h4><p>${st.p}</p></div></div>`).join('');
+  const note=s.note?`<div class="slido-note" data-seq="${s.steps.length+1}">${s.note}</div>`:'';
+  return `<div class="scene"><div class="kicker">${s.kicker}</div>${artHTML(s.art)}
+    <div class="title">${s.title}</div><div class="steps">${steps}</div>${note}</div>`;
+}
+function coverHTML(s){
+  return `<div class="scene">${s.kicker?`<div class="kicker">${s.kicker}</div>`:''}${artHTML(s.art)}
+    <div class="title">${s.title}</div>${s.sub?`<div class="sub" data-seq="1">${s.sub}</div>`:''}</div>`;
+}
+function build(s){
+  switch(s.type){
+    case 'home': return homeHTML();
+    case 'part': return partHTML(s);
+    case 'quiz': return quizHTML(s);
+    case 'score': return scoreHTML(s);
+    case 'demo': return demoHTML(s);
+    case 'frame': return frameHTML(s);
+    default: return coverHTML(s);
+  }
+}
+
+function render(){
+  const s=SCENES[idx];
+  stage.innerHTML=build(s);
+  const sc=stage.querySelector('.scene');
+  if(sc&&(s.type==='quiz'||s.type==='frame'))sc.classList.add('dense');
+  if(s.type==='home') stage.querySelectorAll('.dept').forEach(b=>b.onclick=e=>{e.stopPropagation();pickDept(b.dataset.dept);});
+  const seqs=[...stage.querySelectorAll('[data-seq]')].map(e=>+e.dataset.seq);
+  maxStep=seqs.length?Math.max(...seqs):0;step=0;applyStep();
+  document.getElementById('chapter').textContent=s.type==='home'?'選擇營隊':s.ch;
+  document.getElementById('progress').textContent=s.type==='home'?'主頁':`${idx} / ${SCENES.length-1}`;
+}
+function applyStep(){
+  stage.querySelectorAll('[data-seq]').forEach(e=>e.classList.toggle('on',+e.dataset.seq<=step));
+  const o=stage.querySelector('.options');if(o)o.classList.toggle('revealed',step>=1);
+}
+function next(){if(step<maxStep){step++;applyStep();return;}if(idx<SCENES.length-1)goto(idx+1);}
+function prev(){if(step>0){step--;applyStep();return;}if(idx>0)goto(idx-1);}
+function goto(n){
+  const fade=document.getElementById('fade');stage.classList.add('swap');fade.style.opacity='1';
+  setTimeout(()=>{idx=Math.max(0,Math.min(SCENES.length-1,n));render();stage.classList.remove('swap');fade.style.opacity='0';},180);
+}
+function pickDept(name){if(name===ACTIVE){goto(FLOW_START);}else{showSoon(name);}}
+
+/* ===== 操作 ===== */
+const anyOverlayOpen=()=>document.querySelector('.overlay.open');
+document.addEventListener('keydown',e=>{
+  if(anyOverlayOpen()){if(e.key==='Escape')closeOverlays();return;}
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='Enter'){e.preventDefault();next();}
+  else if(e.key==='ArrowLeft'){e.preventDefault();prev();}
+  else if(e.key==='m'||e.key==='M')openMenu();
+  else if(e.key==='h'||e.key==='H')goto(0);
+  else if(e.key==='f'||e.key==='F')toggleFull();
+});
+stage.addEventListener('click',e=>{
+  if(SCENES[idx].type==='home')return;        /* 主頁不靠點畫面前進，避免誤跳 */
+  if(e.clientX/window.innerWidth<0.25)prev();else next();
+});
+function toggleFull(){if(!document.fullscreenElement)document.documentElement.requestFullscreen?.();else document.exitFullscreen?.();}
+
+/* ===== 章節選單（逐頁 + 頁碼）===== */
+const menu=document.getElementById('menu');
+(function(){
+  let html='',cur='';
+  SCENES.forEach((s,i)=>{
+    if(s.ch!==cur){cur=s.ch;html+=`<div class="mchap"><span>${cur}</span>`;}
+    const pg=i===0?'主頁':`P${i}`;
+    html+=`<button class="mitem" data-go="${i}"><span class="pg">${pg}</span><span>${s.m}</span></button>`;
+  });
+  document.getElementById('menuList').innerHTML=html;
+  menu.querySelectorAll('.mitem').forEach(b=>b.onclick=()=>{closeOverlays();goto(+b.dataset.go);});
+})();
+function openMenu(){menu.classList.add('open');}
+function closeOverlays(){document.querySelectorAll('.overlay').forEach(o=>o.classList.remove('open'));}
+document.getElementById('menuBtn').onclick=openMenu;
+document.getElementById('menuClose').onclick=closeOverlays;
+document.getElementById('homeBtn').onclick=()=>goto(0);
+menu.addEventListener('click',e=>{if(e.target===menu)closeOverlays();});
+
+/* ===== 準備中彈窗 ===== */
+const soon=document.getElementById('soon');
+function showSoon(name){
+  document.getElementById('soonTitle').textContent=name+' · 內容準備中';
+  document.getElementById('soonMsg').textContent='這個營隊的課程我們之後再一起完成 🚧　今天先用「電機營」示範完整流程。';
+  soon.classList.add('open');
+}
+document.getElementById('soonClose').onclick=closeOverlays;
+document.getElementById('soonBack').onclick=()=>{closeOverlays();goto(0);};
+soon.addEventListener('click',e=>{if(e.target===soon)closeOverlays();});
+
+/* ===== 星空 ===== */
+(function(){let h='';for(let i=0;i<120;i++){const s=(Math.random()*2+0.6).toFixed(1);
+  h+=`<span class="star" style="left:${(Math.random()*100).toFixed(2)}%;top:${(Math.random()*100).toFixed(2)}%;width:${s}px;height:${s}px;animation-delay:${(Math.random()*4).toFixed(1)}s"></span>`;}
+  document.getElementById('stars').innerHTML=h;})();
+
+/* ===== 背景小彩蛋 ===== */
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EGGSVG={
+ meteor:`<svg viewBox="0 0 60 30"><line x1="6" y1="24" x2="40" y2="6" stroke="#FFE873" stroke-width="2.4" stroke-linecap="round"/><circle cx="42" cy="5" r="3.4" fill="#fff"/></svg>`,
+ rock:`<svg viewBox="0 0 40 40"><path d="M8 22l4-10 12-4 8 8-4 14-14 2Z" fill="rgba(180,185,210,.5)" stroke="rgba(220,225,255,.5)" stroke-width="1.5"/></svg>`,
+ ship:`<svg viewBox="0 0 70 34"><path d="M6 18h40l16-8-10 16H10Z" fill="rgba(61,123,224,.45)" stroke="#FFE873" stroke-width="1.6"/><circle cx="40" cy="15" r="3" fill="#fff"/></svg>`,
+ ufo:`<svg viewBox="0 0 60 40"><ellipse cx="30" cy="24" rx="22" ry="7" fill="rgba(120,90,255,.45)" stroke="#FFE873" stroke-width="1.4"/><path d="M18 22a12 8 0 0 1 24 0Z" fill="rgba(200,210,255,.55)"/><circle cx="30" cy="16" r="2.4" fill="#0a0e2e"/></svg>`,
+};
+function spawnEgg(){
+  if(reduce)return;
+  const layer=document.getElementById('egg');const ks=Object.keys(EGGSVG);const t=ks[Math.floor(Math.random()*ks.length)];
+  const el=document.createElement('div');el.className='egg';el.innerHTML=EGGSVG[t];
+  const top=(Math.random()<.5?Math.random()*32:70+Math.random()*22);
+  const size=t==='meteor'?(30+Math.random()*26):(22+Math.random()*30);const dir=Math.random()<.5?1:-1;
+  el.style.top=top+'%';el.style.width=size+'px';el.style.opacity='0';el.style.transform=`scaleX(${dir})`;
+  el.style.left=dir>0?'-8%':'108%';layer.appendChild(el);
+  const dur=t==='meteor'?(7+Math.random()*4):(22+Math.random()*16);const endX=dir>0?'116%':'-16%';
+  el.animate([{left:el.style.left,opacity:0},{opacity:.5,offset:.15},{opacity:.45,offset:.85},{left:endX,opacity:0}],
+    {duration:dur*1000,easing:'linear'}).onfinish=()=>el.remove();
+}
+setTimeout(function loop(){spawnEgg();setTimeout(loop,(9+Math.random()*13)*1000);},6000);
+
+render();
+</script>
+</body>
+</html>
